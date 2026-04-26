@@ -1,0 +1,8 @@
+{
+  "name": "CrisisFlow",
+  "description": "Real-time emergency coordination platform",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

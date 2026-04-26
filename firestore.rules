@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAnonymous() {
+      return request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'staff';
+    }
+    
+    function isManager() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'manager';
+    }
+    
+    function isStaffOrManager() {
+      return isStaff() || isManager();
+    }
+    
+    function affectedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    match /incidents/{incidentId} {
+      allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
+      allow read: if isStaffOrManager() || (isSignedIn() && resource.data.reportedBy == request.auth.uid);
+      allow update: if isStaffOrManager();
+      allow delete: if isManager();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if isStaffOrManager() || isSignedIn();
+      allow create: if true; // TEMP for seeding
+      allow delete: if isManager();
+      allow update: if isManager() || (isStaff() && affectedKeys().hasOnly(['available', 'currentIncidentId', 'lastUpdated', 'zone', 'zoneId']));
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isManager());
+      allow update: if isSignedIn() && request.auth.uid == userId && affectedKeys().hasOnly(['fcmToken', 'fcmTokenUpdatedAt']);
+      allow create: if true; // TEMP for seeding
+      allow delete: if false; // Admin backend only
+    }
+
+    match /zones/{zoneId} {
+      allow read: if isSignedIn();
+      allow create: if true; // TEMP for seeding
+      allow update, delete: if isManager();
+    }
+
+    match /dispatch/{dispatchId} {
+      allow read: if isStaffOrManager();
+      allow update: if isManager() && affectedKeys().hasOnly(['confirmed', 'confirmedBy', 'confirmedAt']);
+      allow create, delete: if false; // Admin backend only
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isSignedIn();
+      allow create, update: if isStaffOrManager();
+      allow delete: if isManager();
+    }
+
+    match /analytics/{dateId} {
+      allow read: if isManager();
+      allow create, update, delete: if false; // Admin backend only
+    }
+  }
+}

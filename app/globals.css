@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cfNavy: #141414;
+  --color-cfRed: #5A5A40;
+  --color-cfAmber: #8A8263;
+  --color-cfGreen: #475B49;
+  --color-cfBlue: #4A5868;
+  --color-cfSurface: #F5F5F0;
+  --color-cfCard: #F5F5F0;
+  --color-cfBorder: rgba(20,20,20,0.1);
+  --color-cfMuted: rgba(20,20,20,0.6);
+  --color-cfDim: rgba(20,20,20,0.4);
+}
+
+body {
+  background-color: var(--color-cfSurface);
+}
